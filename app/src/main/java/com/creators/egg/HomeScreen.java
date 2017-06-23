@@ -20,8 +20,7 @@ public class HomeScreen extends Fragment {
         start.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                // TODO: 6/6/17
-                ((MainActivity)getActivity()).changeFragment(new GameFragment());
+                ((MainActivity)getActivity()).changeFragment(new GameFragment(),true);
             }
         });
 

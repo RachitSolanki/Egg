@@ -22,16 +22,16 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
 
         setContentView(R.layout.activity_fullscreen);
-        changeFragment(new HomeScreen());
+        changeFragment(new HomeScreen(),false);
 
     }
 
 
 
-    public void changeFragment(Fragment fragment){
+    public void changeFragment(Fragment fragment,boolean addToBackStack){
 
         FragmentTransaction fragmentTransaction=getSupportFragmentManager().beginTransaction();
-        fragmentTransaction.addToBackStack(fragment.getTag());
+        if(addToBackStack)fragmentTransaction.addToBackStack(fragment.getTag());
         fragmentTransaction.replace(R.id.main_view,fragment);
         fragmentTransaction.commit();
 

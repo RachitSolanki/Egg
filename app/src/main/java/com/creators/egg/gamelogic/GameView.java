@@ -1,8 +1,6 @@
 package com.creators.egg.gamelogic;
 
 import android.content.Context;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
@@ -17,6 +15,10 @@ import android.view.MotionEvent;
 import android.view.View;
 
 import com.creators.egg.R;
+import com.creators.egg.extras.Collider;
+import com.creators.egg.objects.BaseObject;
+import com.creators.egg.objects.Egg;
+import com.creators.egg.objects.Platform;
 
 /**
  * View Rendering will be done here
@@ -36,59 +38,73 @@ public class GameView extends View implements Runnable,View.OnTouchListener, Sen
     Sensor mSensor;
 
 
-   final int gravityConstant=2;
-    int x,y;
 
-    int px,py;
+    Platform[] platforms=new Platform[10];
+    BaseObject[] specials=new BaseObject[2];
+    Egg egg;
+
+    final int gravityConstant=2;
+    public final static int JumpHeight=150;
+
 
     int  velocityY=0;
     int  velocityX=0;
 
-
     boolean onPlatform=true;
-
 
 
     public GameView(Context context) {
         super(context);
-        bm = BitmapFactory.decodeResource(getContext().getResources(), R.drawable.egg);
-        bm2 = BitmapFactory.decodeResource(getContext().getResources(), R.drawable.platform);
-
+        renderBackground();
     }
 
     public GameView(Context context, @Nullable AttributeSet attrs) {
         super(context, attrs);
-        bm = BitmapFactory.decodeResource(getContext().getResources(), R.drawable.egg);
-        bm2 = BitmapFactory.decodeResource(getContext().getResources(), R.drawable.platform);
-
+        renderBackground();
     }
 
     public GameView(Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
+        renderBackground();
 
-        bm = BitmapFactory.decodeResource(getContext().getResources(), R.drawable.egg);
-        bm2 = BitmapFactory.decodeResource(getContext().getResources(), R.drawable.platform);
 
     }
 
     @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
     public GameView(Context context, @Nullable AttributeSet attrs, int defStyleAttr, int defStyleRes) {
         super(context, attrs, defStyleAttr, defStyleRes);
-        bm = BitmapFactory.decodeResource(getContext().getResources(), R.drawable.egg);
-        bm2 = BitmapFactory.decodeResource(getContext().getResources(), R.drawable.platform);
-
     }
 
-    Bitmap bm;
-    Bitmap bm2;
+
+    private void renderBackground(){
+       setBackgroundResource(R.drawable.gradient);
+        initializeGameObjects();
+    }
+
+
+    private  void initializeGameObjects(){
+        //Every platform is relative to the first
+        for(int i=0;i<platforms.length;i++){
+
+            if(i==0){// special case
+                platforms[0]=Platform.createPlatform(getContext(),getWidth()/2,getHeight());
+            }else{
+                platforms[i]= Platform.createPlatform(getContext(),platforms[i-1].getX(),platforms[i-1].getY());
+            }
+
+        }
+
+        egg=new Egg(getContext(),getWidth()/2,getHeight()/2);
+    }
 
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
 
+        for(Platform platform : platforms)
+        canvas.drawBitmap(platform.getBitmapOfObject(),platform.getX(),platform.getY(),null);
 
-        canvas.drawBitmap(bm,x,y,null);
-        canvas.drawBitmap(bm2,px,py,null);
+        canvas.drawBitmap(egg.getBitmapOfObject(),egg.getX(),egg.getY(),null);
     }
 
     /**
@@ -125,23 +141,13 @@ public class GameView extends View implements Runnable,View.OnTouchListener, Sen
 
     }
 
-    private void initializeVariables(){
-        y=getHeight()/2;
-        x=getWidth()/2;
 
-        py=getHeight()/2;
-        px=getWidth()/2;
-
-
-
-    }
 
 
     private void init(){
         setOnTouchListener(this);
-        initializeVariables();
+        initializeGameObjects();
         attachControls();
-
         th=new Thread(this);
         th.start();
     }
@@ -156,6 +162,7 @@ public class GameView extends View implements Runnable,View.OnTouchListener, Sen
 
 
     private void detachControls(){
+        if(mSensorManager!=null)
         mSensorManager.unregisterListener(this);
     }
 
@@ -194,14 +201,16 @@ public class GameView extends View implements Runnable,View.OnTouchListener, Sen
             if(paused)
                 pauseLoop();
 
-            y += (velocityY+gravityConstant);
-            x+=velocityX;
 
-             if(y<(py-450)){
+            //Update Egg coordinates
+            egg.setY(egg.getY()+(velocityY+gravityConstant));
+            egg.setX(egg.getX()+velocityX);
+
+             if(egg.getY()<(platforms[0].getY()-JumpHeight)){
                  endJump();
              }
 
-              if(((y+50)<py&&(y+50/2)<(py+50))&&(x>0&&x<px)){
+              if(Collider.checkCollide(egg,platforms[0])){
                  onPlatform=true;
                   // activate jump agains
                  //detect if it is on edge or continue to free fall
@@ -210,7 +219,7 @@ public class GameView extends View implements Runnable,View.OnTouchListener, Sen
 
 
             try {
-                Thread.sleep(40);
+                Thread.sleep(30);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
@@ -271,7 +280,7 @@ public class GameView extends View implements Runnable,View.OnTouchListener, Sen
         linear_acceleration[1] = event.values[1] - gravity[1];
         linear_acceleration[2] = event.values[2] - gravity[2];
 
-        Log.e("accelerai X",   event.values[0]+"   > "+linear_acceleration[0]);
+       // Log.e("accelerai X",   event.values[0]+"   > "+linear_acceleration[0]);
         //Log.e("accelerai Y","> "+linear_acceleration[1]);
         //Log.e("accelerai Z","> "+linear_acceleration[2]);
 
